@@ -1,5 +1,5 @@
 import React from 'react';
-import {StyleSheet, Text, View, FlatList, ScrollView, Image, ActivityIndicator, TextInput} from 'react-native';
+import {StyleSheet, Text, View, FlatList, ScrollView, Image, ActivityIndicator, TextInput, StatusBar} from 'react-native';
 import {StackNavigator, Header} from 'react-navigation';
 import {ListItem} from 'react-native-elements';
 import {LinearGradient} from 'expo';
@@ -12,24 +12,41 @@ class HomeScreen extends React.Component {
       text: '',
       search: false
     }
+    this.checkToSearch = this.checkToSearch.bind(this);
   }
   static navigationOptions = {
     title: 'Vortaro',
-    headerStyle: {backgroundColor: 'transparent', borderBottomWidth: 0},
-    headerTitleStyle: {fontWeight: '900', color: 'white', fontSize: 23}
   };
   searchFilter (item) {
     return item.word.includes(this.state.text.toLowerCase()) || item.meaning.includes(this.state.text.toLowerCase());
+  }
+  checkToSearch () {
+    var entry = data.find((element) => {
+      if (element.word == this.state.text) {
+        return element.word == this.state.text;
+      } else if (element.meaning == this.state.text) {
+        return element.meaning == this.state.text;
+      } else if (element.word.includes(this.state.text)) {
+        return element.word.includes(this.state.text);
+      } else if (element.meaning.includes(this.state.text)) {
+        return element.meaning.includes(this.state.text);
+      } else {
+        return null;
+      }
+    });
+    if (entry) {
+      this.props.navigation.navigate('WordView', {wordInfo: entry})
+    }
   }
   render() {
     return (
       <LinearGradient colors={['#00c9ff', '#00f7ff']} style={{flex: 1}}>
         <View>
-          <TextInput style={styles.searchBar} onChangeText={(text) => this.setState({text})} placeholder="Search..." returnKeyType="search" clearButtonMode="while-editing" onSubmitEditing={() => this.setState({search: true})} />
-          {this.state.search && (<FlatList style={{backgroundColor: 'white'}} data={data.filter(item => this.searchFilter(item))} ListHeaderComponent={this.renderHeader} ListFooterComponent={this.renderFooter} keyExtractor={(item, index) => item.word}
-            renderItem={({item}) =>
-            <ListItem containerStyle={{borderBottomColor: '#eee'}} title={item.word} subtitle={item.meaning + ` (${item.type})`} onPress={() => this.props.navigation.navigate('WordView', {wordInfo: item})} onLongPress={() => alert('hi')} />
-          } />)}
+          <TextInput style={styles.searchBar} onChangeText={(text) => this.setState({text})} placeholder="Search..." returnKeyType="search" clearButtonMode="while-editing" onSubmitEditing={() => this.checkToSearch()} autoCorrect={false} autoCapitalize="none" />
+          {!!this.state.text && (
+            <FlatList style={{backgroundColor: 'white'}} data={data.filter(item => this.searchFilter(item))} ListHeaderComponent={this.renderHeader} ListFooterComponent={this.renderFooter} keyExtractor={(item, index) => item.word} renderItem={({item}) =>
+            <ListItem containerStyle={{borderBottomColor: '#eee'}} title={item.word} subtitle={item.meaning + ` (${item.type})`} onPress={() => this.props.navigation.navigate('WordView', {wordInfo: item})} onLongPress={() => alert('hi')} />} />)
+          }
         </View>
       </LinearGradient>
     );
@@ -70,7 +87,7 @@ class WordScreen extends React.Component {
     }
     return (
       <ScrollView style={styles.container}>
-        <Text style={styles.header}>{params.wordInfo.word}</Text>
+        <Text style={styles.header}>{params.wordInfo.word} <Text style={styles.subheader}>({params.wordInfo.type})</Text></Text>
         <Text style={styles.subheader}>{params.wordInfo.meaning}</Text>
         <Br/>
         <Text style={{fontWeight: 'bold'}}>Examples:</Text>
@@ -111,6 +128,18 @@ const RootStack = StackNavigator({
   WordView: {
     screen: WordScreen,
   }
+}, {
+  navigationOptions: {
+    headerStyle: {
+      backgroundColor: '#00c9ff',
+      borderBottomWidth: 0
+    },
+    headerTitleStyle: {
+      fontWeight: '900',
+      fontSize: 23
+    },
+    headerTintColor: 'white',
+  }
 });
 
 const Br = () => {
@@ -119,6 +148,7 @@ const Br = () => {
 
 export default class App extends React.Component {
   render() {
+    StatusBar.setBarStyle('light-content', true);
     return <RootStack />;
   }
 }
