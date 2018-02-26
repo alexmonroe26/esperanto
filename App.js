@@ -3,6 +3,7 @@ import {StyleSheet, Text, View, FlatList, ScrollView, Image, ActivityIndicator, 
 import {StackNavigator, Header} from 'react-navigation';
 import {ListItem} from 'react-native-elements';
 import {LinearGradient} from 'expo';
+import Accordion from 'react-native-collapsible/Accordion';
 import data from './data_min.json';
 
 class HomeScreen extends React.Component {
@@ -41,13 +42,18 @@ class HomeScreen extends React.Component {
   render() {
     return (
       <LinearGradient colors={['#00c9ff', '#00f7ff']} style={{flex: 1}}>
-        <View>
+        <ScrollView>
           <TextInput style={styles.searchBar} onChangeText={(text) => this.setState({text})} placeholder="Search..." returnKeyType="search" clearButtonMode="while-editing" onSubmitEditing={() => this.checkToSearch()} autoCorrect={false} autoCapitalize="none" />
           {!!this.state.text && (
             <FlatList style={{backgroundColor: 'white'}} data={data.filter(item => this.searchFilter(item))} ListHeaderComponent={this.renderHeader} ListFooterComponent={this.renderFooter} keyExtractor={(item, index) => item.word} renderItem={({item}) =>
             <ListItem containerStyle={{borderBottomColor: '#eee'}} title={item.word} subtitle={item.meaning + ` (${item.type})`} onPress={() => this.props.navigation.navigate('WordView', {wordInfo: item})} onLongPress={() => alert('hi')} />} />)
           }
-        </View>
+          <Br/>
+          <FlatList
+            data={[{key: 'Common Phrases'}, {key: '16 Rules of Esperanto', toPage: 'Rules'}, {key: 'Report an Issue'}]}
+            renderItem={({item}) => <ListItem containerStyle={{backgroundColor: 'rgba(0, 0, 0, 0.5)', borderBottomColor: '#00c9ff'}} titleStyle={{color: 'white'}} chevronColor='white' title={item.key} onPress={() => this.props.navigation.navigate(item.toPage)} />}
+          />
+        </ScrollView>
       </LinearGradient>
     );
   }
@@ -61,11 +67,6 @@ class WordScreen extends React.Component {
   static navigationOptions = ({navigation}) => ({
     title: 'Definition',
   });
-  componentWillMount() {
-    if (this.props.navigation.state.params.wordInfo.type == "verb") {
-      this.setState({verb: true});
-    }
-  }
   render() {
     const { params } = this.props.navigation.state;
     var examples = [];
@@ -99,6 +100,23 @@ class WordScreen extends React.Component {
   }
 }
 
+class RulesScreen extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {}
+  }
+  static navigationOptions = ({navigation}) => ({
+    title: 'The Rules',
+  });
+  render() {
+    return (
+      <ScrollView>
+        <Text>Hi</Text>
+      </ScrollView>
+    );
+  }
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -127,6 +145,9 @@ const RootStack = StackNavigator({
   },
   WordView: {
     screen: WordScreen,
+  },
+  Rules: {
+    screen: RulesScreen,
   }
 }, {
   navigationOptions: {
