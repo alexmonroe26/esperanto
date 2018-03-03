@@ -2,11 +2,9 @@ import React from 'react';
 import {StyleSheet, Text, View, FlatList, ScrollView, Image, ActivityIndicator, TextInput, StatusBar} from 'react-native';
 import {StackNavigator, Header} from 'react-navigation';
 import {ListItem} from 'react-native-elements';
-import {LinearGradient, SQLite} from 'expo';
+import {LinearGradient} from 'expo';
 import Accordion from 'react-native-collapsible/Accordion';
 import data from './data_min.json';
-
-const db = SQLite.openDatabase('data.sqlite');
 
 class HomeScreen extends React.Component {
   constructor(props) {
@@ -47,12 +45,12 @@ class HomeScreen extends React.Component {
         <ScrollView>
           <TextInput style={styles.searchBar} onChangeText={(text) => this.setState({text})} placeholder="Search..." returnKeyType="search" clearButtonMode="while-editing" onSubmitEditing={() => this.checkToSearch()} autoCorrect={false} autoCapitalize="none" />
           {!!this.state.text && (
-            <FlatList style={{backgroundColor: 'white'}} data={data.filter(item => this.searchFilter(item)).sort(function(arg1, arg2) { return arg1.meaning.length - arg2.meaning.length }).slice(0, 4)} ListHeaderComponent={this.renderHeader} ListFooterComponent={this.renderFooter} keyExtractor={(item, index) => item.word} renderItem={({item}) =>
+            <FlatList style={{backgroundColor: 'white'}} data={data.filter(item => this.searchFilter(item))} ListHeaderComponent={this.renderHeader} ListFooterComponent={this.renderFooter} keyExtractor={(item, index) => item.word} renderItem={({item}) =>
             <ListItem containerStyle={{borderBottomColor: '#eee'}} title={item.word} subtitle={item.meaning + ` (${item.type})`} onPress={() => this.props.navigation.navigate('WordView', {wordInfo: item})} onLongPress={() => alert('hi')} />} />)
           }
           <Br/>
           <FlatList
-            data={[{key: 'Common Phrases'}, {key: '16 Rules of Esperanto', toPage: 'Rules'}, {key: 'Report an Issue'}, {key: 'Forming Verbs'}]}
+            data={[{key: 'Common Phrases'}, {key: '16 Rules of Esperanto', toPage: 'Rules'}, {key: 'Report an Issue'}]}
             renderItem={({item}) => <ListItem containerStyle={{backgroundColor: 'rgba(0, 0, 0, 0.5)', borderBottomColor: '#00c9ff'}} titleStyle={{color: 'white'}} chevronColor='white' title={item.key} onPress={() => this.props.navigation.navigate(item.toPage)} />}
           />
         </ScrollView>
