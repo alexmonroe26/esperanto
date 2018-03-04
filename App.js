@@ -2,57 +2,45 @@ import React from 'react';
 import {StyleSheet, Text, View, FlatList, ScrollView, Image, ActivityIndicator, TextInput, StatusBar} from 'react-native';
 import {StackNavigator, Header} from 'react-navigation';
 import {ListItem} from 'react-native-elements';
-import {LinearGradient} from 'expo';
-import Accordion from 'react-native-collapsible/Accordion';
+import {LinearGradient, SQLite} from 'expo';
+import fuzzysort from './fuzzysort.js';
 import data from './data_min.json';
+// const db = SQLite.openDatabase("data.sqlite");
 
 class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      text: '',
-      search: false
+      searchText: '',
+      data: null,
     }
-    this.checkToSearch = this.checkToSearch.bind(this);
   }
   static navigationOptions = {
     title: 'Vortaro',
   };
-  searchFilter (item) {
-    return item.word.includes(this.state.text.toLowerCase()) || item.meaning.includes(this.state.text.toLowerCase());
-  }
-  checkToSearch () {
-    var entry = data.find((element) => {
-      if (element.word == this.state.text) {
-        return element.word == this.state.text;
-      } else if (element.meaning == this.state.text) {
-        return element.meaning == this.state.text;
-      } else if (element.word.includes(this.state.text)) {
-        return element.word.includes(this.state.text);
-      } else if (element.meaning.includes(this.state.text)) {
-        return element.meaning.includes(this.state.text);
-      } else {
-        return null;
-      }
-    });
-    if (entry) {
-      this.props.navigation.navigate('WordView', {wordInfo: entry})
+  setSearchText (event) {
+    let searchText = event.nativeEvent.text;
+    this.setState({searchText});
+    // var results = data.filter(item => item.word.includes(searchText) || item.word == searchText || item.meaning.includes(searchText) || item.meaning == searchText ).sort();
+    let rawResults = fuzzysort.go(searchText, data, {keys: ['word', 'meaning'], threshold: -200, limit: 200,});
+    var results = [];
+    for (i = 0; i < rawResults.length; i++) {
+      results.push(rawResults[i].obj);
     }
+    this.setState({data: results});
   }
   render() {
     return (
       <LinearGradient colors={['#00c9ff', '#00f7ff']} style={{flex: 1}}>
         <ScrollView>
-          <TextInput style={styles.searchBar} onChangeText={(text) => this.setState({text})} placeholder="Search..." returnKeyType="search" clearButtonMode="while-editing" onSubmitEditing={() => this.checkToSearch()} autoCorrect={false} autoCapitalize="none" />
-          {!!this.state.text && (
-            <FlatList style={{backgroundColor: 'white'}} data={data.filter(item => this.searchFilter(item))} ListHeaderComponent={this.renderHeader} ListFooterComponent={this.renderFooter} keyExtractor={(item, index) => item.word} renderItem={({item}) =>
-            <ListItem containerStyle={{borderBottomColor: '#eee'}} title={item.word} subtitle={item.meaning + ` (${item.type})`} onPress={() => this.props.navigation.navigate('WordView', {wordInfo: item})} onLongPress={() => alert('hi')} />} />)
-          }
-          <Br/>
+          <TextInput style={styles.searchBar} onSubmitEditing={this.setSearchText.bind(this)} placeholder="Search..." returnKeyType="search" clearButtonMode="while-editing" autoCorrect={false} autoCapitalize="none" />
+          <FlatList style={{backgroundColor: 'white'}} data={this.state.data} keyExtractor={(item, index) => item.word} renderItem={({item}) =>
+          <ListItem containerStyle={{borderBottomColor: '#eee'}} title={item.word} subtitle={item.meaning} onPress={() => this.props.navigation.navigate('WordView', {wordInfo: item})} />} />
+          {/* <Br/>
           <FlatList
-            data={[{key: 'Common Phrases'}, {key: '16 Rules of Esperanto', toPage: 'Rules'}, {key: 'Report an Issue'}]}
+            data={[{key: 'Common Phrases'}, {key: '16 Rules of Esperanto', toPage: 'Rules'}, {key: 'Report an Issue'}, {key: 'Forming Verbs'}]}
             renderItem={({item}) => <ListItem containerStyle={{backgroundColor: 'rgba(0, 0, 0, 0.5)', borderBottomColor: '#00c9ff'}} titleStyle={{color: 'white'}} chevronColor='white' title={item.key} onPress={() => this.props.navigation.navigate(item.toPage)} />}
-          />
+          /> */}
         </ScrollView>
       </LinearGradient>
     );
@@ -84,17 +72,19 @@ class WordScreen extends React.Component {
         );
       }
     } else {
-      examples.push(<Text style={{color: 'grey', padding: 10}} key={0}>No examples found.</Text>);
+      // examples.push(<Text style={{color: 'grey', padding: 10}} key={0}>No examples found.</Text>);
     }
     return (
       <ScrollView style={styles.container}>
         <Text style={styles.header}>{params.wordInfo.word} <Text style={styles.subheader}>({params.wordInfo.type})</Text></Text>
         <Text style={styles.subheader}>{params.wordInfo.meaning}</Text>
         <Br/>
-        <Text style={{fontWeight: 'bold'}}>Examples:</Text>
-        <View>
-          {examples}
-        </View>
+        {!!examples &&
+          <View>
+            <Text style={{fontWeight: 'bold'}}>Examples:</Text>
+            {examples}
+          </View>
+        }
       </ScrollView>
     );
   }
