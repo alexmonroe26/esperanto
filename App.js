@@ -1,11 +1,11 @@
 import React from 'react';
-import {StyleSheet, Text, View, FlatList, ScrollView, Image, ActivityIndicator, TextInput, StatusBar} from 'react-native';
+import {StyleSheet, Text, View, FlatList, ScrollView, Image, ActivityIndicator, TextInput, StatusBar, TouchableWithoutFeedback, TouchableHighlight, Button, Animated} from 'react-native';
 import {StackNavigator, Header} from 'react-navigation';
-import {ListItem} from 'react-native-elements';
-import {LinearGradient, SQLite} from 'expo';
+import {LinearGradient, SQLite, DangerZone} from 'expo';
+const { Lottie } = DangerZone;
+import {Ionicons} from '@expo/vector-icons';
 import fuzzysort from './fuzzysort.js';
 import data from './data_min.json';
-// const db = SQLite.openDatabase("data.sqlite");
 
 class HomeScreen extends React.Component {
   constructor(props) {
@@ -14,15 +14,33 @@ class HomeScreen extends React.Component {
       searchText: '',
       data: null,
     }
-  }
-  static navigationOptions = {
-    title: 'Vortaro',
   };
-  setSearchText (event) {
-    let searchText = event.nativeEvent.text;
+  static navigationOptions = ({navigation}) => {
+    const { params } = navigation.state;
+    return {
+      title: 'Vortaro',
+      // headerRight: <Button title="Favs" color="white" onPress={() => navigation.navigate('Favorites')} />,
+    }
+  };
+  setSearchText(text) {
+    let searchText = text.replace(/cx|gx|hx|jx|sx|ux/gi, function (x) {
+      switch (x) {
+        case 'cx':
+            return 'ĉ';
+        case 'gx':
+          return 'ĝ';
+        case 'hx':
+          return 'ĥ';
+        case 'jx':
+          return 'ĵ';
+        case 'sx':
+          return 'ŝ';
+        case 'ux':
+          return 'ŭ';
+      }
+    });
     this.setState({searchText});
-    // var results = data.filter(item => item.word.includes(searchText) || item.word == searchText || item.meaning.includes(searchText) || item.meaning == searchText ).sort();
-    let rawResults = fuzzysort.go(searchText, data, {keys: ['word', 'meaning'], threshold: -200, limit: 200,});
+    let rawResults = fuzzysort.go(this.state.searchText, data, {keys: ['word', 'meaning'], threshold: -200, limit: 200,});
     var results = [];
     for (i = 0; i < rawResults.length; i++) {
       results.push(rawResults[i].obj);
@@ -33,14 +51,17 @@ class HomeScreen extends React.Component {
     return (
       <LinearGradient colors={['#00c9ff', '#00f7ff']} style={{flex: 1}}>
         <ScrollView>
-          <TextInput style={styles.searchBar} onSubmitEditing={this.setSearchText.bind(this)} placeholder="Search..." returnKeyType="search" clearButtonMode="while-editing" autoCorrect={false} autoCapitalize="none" />
+          <TextInput style={styles.searchBar} value={this.state.searchText} onChangeText={(text) => this.setSearchText(text)} placeholder="Search..." returnKeyType="search" clearButtonMode="while-editing" autoCorrect={false} autoCapitalize="none" />
           <FlatList style={{backgroundColor: 'white'}} data={this.state.data} keyExtractor={(item, index) => item.word} renderItem={({item}) =>
-          <ListItem containerStyle={{borderBottomColor: '#eee'}} title={item.word} subtitle={item.meaning} onPress={() => this.props.navigation.navigate('WordView', {wordInfo: item})} />} />
+          <ListItem title={item.word} subtitle={item.meaning} onPress={() => this.props.navigation.navigate('WordView', {wordInfo: item})} />} />
           {/* <Br/>
           <FlatList
             data={[{key: 'Common Phrases'}, {key: '16 Rules of Esperanto', toPage: 'Rules'}, {key: 'Report an Issue'}, {key: 'Forming Verbs'}]}
             renderItem={({item}) => <ListItem containerStyle={{backgroundColor: 'rgba(0, 0, 0, 0.5)', borderBottomColor: '#00c9ff'}} titleStyle={{color: 'white'}} chevronColor='white' title={item.key} onPress={() => this.props.navigation.navigate(item.toPage)} />}
           /> */}
+          {/* <Lottie ref={animation => {
+            this.animation = animation;
+          }} source={require('./animation/wordcloud-data.json')} style={{height: 200, width: 300}} loop={true}/> */}
         </ScrollView>
       </LinearGradient>
     );
@@ -50,11 +71,21 @@ class HomeScreen extends React.Component {
 class WordScreen extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {}
+    this.state = {
+      showExamples: false,
+    }
   }
-  static navigationOptions = ({navigation}) => ({
-    title: 'Definition',
-  });
+  static navigationOptions = ({navigation}) => {
+    const { state, setParams, navigate } = navigation;
+    const params = state.params || {};
+    return {
+      title: 'Definition',
+      // headerRight: <Ionicons name={params.favorite ? "md-heart" : "md-heart-outline"} size={25} color="white" style={{padding: 10}} onPress={() => {
+      //   navigation.setParams({favorite: !params.favorite});
+      //   store.push('favorites', params.wordInfo);
+      // }} />
+    }
+  }
   render() {
     const { params } = this.props.navigation.state;
     var examples = [];
@@ -76,10 +107,10 @@ class WordScreen extends React.Component {
     }
     return (
       <ScrollView style={styles.container}>
-        <Text style={styles.header}>{params.wordInfo.word} <Text style={styles.subheader}>({params.wordInfo.type})</Text></Text>
-        <Text style={styles.subheader}>{params.wordInfo.meaning}</Text>
+        <Text style={styles.word}>{params.wordInfo.word}</Text>
+        <Text style={styles.meaning}>{params.wordInfo.meaning}</Text>
         <Br/>
-        {!!examples &&
+        {this.state.showExamples &&
           <View>
             <Text style={{fontWeight: 'bold'}}>Examples:</Text>
             {examples}
@@ -90,20 +121,35 @@ class WordScreen extends React.Component {
   }
 }
 
-class RulesScreen extends React.Component {
+class FavoritesScreen extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {}
+    this.state = {
+      data: null,
+    }
+  };
+  static navigationOptions = ({navigation}) => {
+    const { state, setParams, navigate } = navigation;
+    const params = state.params || {};
+    return {
+      title: 'Favorites',
+    }
   }
-  static navigationOptions = ({navigation}) => ({
-    title: 'The Rules',
-  });
+  componentDidMount() {
+    store.get('favorites').then((res) => {
+      console.log(res);
+    	this.setState({data: res});
+    });
+  }
   render() {
     return (
-      <ScrollView>
-        <Text>Hi</Text>
-      </ScrollView>
-    );
+      <LinearGradient colors={['#00c9ff', '#00f7ff']} style={{flex: 1}}>
+        <ScrollView>
+          <FlatList style={{backgroundColor: 'white'}} data={this.state.data} keyExtractor={(item, index) => item.word} renderItem={({item}) =>
+          <ListItem title={item.word} subtitle={item.meaning} onPress={() => this.props.navigation.navigate('WordView', {wordInfo: item})} />} />
+        </ScrollView>
+      </LinearGradient>
+    )
   }
 }
 
@@ -125,7 +171,26 @@ const styles = StyleSheet.create({
     margin: 20,
     padding: 10,
     backgroundColor: 'white',
-    borderRadius: 8
+    borderRadius: 8,
+    borderColor: 'lightgrey',
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  word: {
+    flex: 1,
+    justifyContent: 'center',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 40,
+    paddingVertical: 20,
+  },
+  meaning: {
+    flex: 1,
+    justifyContent: 'center',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 40,
+    paddingVertical: 20,
+    color: '#00c9ff'
   }
 });
 
@@ -136,10 +201,10 @@ const RootStack = StackNavigator({
   WordView: {
     screen: WordScreen,
   },
-  Rules: {
-    screen: RulesScreen,
+  Favorites: {
+    screen: FavoritesScreen,
   }
-}, {
+  }, {
   navigationOptions: {
     headerStyle: {
       backgroundColor: '#00c9ff',
@@ -155,6 +220,17 @@ const RootStack = StackNavigator({
 
 const Br = () => {
   return <View style={{height: 20}}/>
+}
+
+const ListItem = (props) => {
+  return (
+    <TouchableHighlight onPress={props.onPress}>
+      <View style={{backgroundColor: 'white', padding: 10, paddingLeft: 20}}>
+        <Text>{props.title}</Text>
+        <Text style={{color: 'grey'}}>{props.subtitle}</Text>
+      </View>
+    </TouchableHighlight>
+  );
 }
 
 export default class App extends React.Component {
