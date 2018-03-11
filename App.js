@@ -1,11 +1,12 @@
 import React from 'react';
-import {StyleSheet, Text, View, FlatList, ScrollView, Image, ActivityIndicator, TextInput, StatusBar, TouchableWithoutFeedback, TouchableHighlight, Button, Animated} from 'react-native';
+import {StyleSheet, Text, View, FlatList, ScrollView, Image, ActivityIndicator, TextInput, StatusBar, TouchableWithoutFeedback, TouchableHighlight, Button, Animated, Dimensions} from 'react-native';
 import {StackNavigator, Header} from 'react-navigation';
 import {LinearGradient, SQLite, DangerZone} from 'expo';
 const { Lottie } = DangerZone;
 import {Ionicons} from '@expo/vector-icons';
 import fuzzysort from './fuzzysort.js';
 import data from './data_min.json';
+var {height, width} = Dimensions.get('window');
 
 class HomeScreen extends React.Component {
   constructor(props) {
@@ -22,6 +23,9 @@ class HomeScreen extends React.Component {
       // headerRight: <Button title="Favs" color="white" onPress={() => navigation.navigate('Favorites')} />,
     }
   };
+  componentDidMount() {
+    this.animation.play();
+  }
   setSearchText(text) {
     let searchText = text.replace(/cx|gx|hx|jx|sx|ux/gi, function (x) {
       switch (x) {
@@ -59,9 +63,9 @@ class HomeScreen extends React.Component {
             data={[{key: 'Common Phrases'}, {key: '16 Rules of Esperanto', toPage: 'Rules'}, {key: 'Report an Issue'}, {key: 'Forming Verbs'}]}
             renderItem={({item}) => <ListItem containerStyle={{backgroundColor: 'rgba(0, 0, 0, 0.5)', borderBottomColor: '#00c9ff'}} titleStyle={{color: 'white'}} chevronColor='white' title={item.key} onPress={() => this.props.navigation.navigate(item.toPage)} />}
           /> */}
-          {/* <Lottie ref={animation => {
+          <Lottie ref={animation => {
             this.animation = animation;
-          }} source={require('./animation/wordcloud-data.json')} style={{height: 200, width: 300}} loop={true}/> */}
+          }} source={require('./animation/wordcloud-data.json')} style={{height: 300, width: width}} loop={true} speed={2} />
         </ScrollView>
       </LinearGradient>
     );
